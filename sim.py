@@ -128,7 +128,7 @@ class PrimateAgent:
             if not active_mechanisms:
                 return self.behavior_strategy
             
-            score += 0.5 if self.behavior_strategy == 'cooperate' else -0.5
+            score += 2.0 if self.behavior_strategy == 'cooperate' else -2.0
             prob = 1 / (1 + np.exp(-score))
             return 'cooperate' if random.random() < prob else 'defect'
     
