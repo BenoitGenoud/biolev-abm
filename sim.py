@@ -176,8 +176,8 @@ def run_simulation():
 if st.button("Lancer la simulation"):
     cooperation_history, proportion_cooperators = run_simulation()
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(cooperation_history, label="Taux de coopération observé (interactions)")
-    ax.plot(proportion_cooperators, label="Proportion de coopérateurs (population)")
+    ax.plot(cooperation_history, label="Taux de coopération observé")
+    ax.plot(proportion_cooperators, label="Proportion de coopérateurs")
     ax.set_title("Évolution de la coopération")
     ax.set_xlabel("Générations")
     ax.set_ylabel("Taux")
