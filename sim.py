@@ -60,6 +60,7 @@ class PrimateAgent:
 
         self.behavior_strategy = self.genetic_strategy
 
+        self.altruism = 0.0
         if self.params.get("use_variable_altruism"):
             if parent1 and parent2 and hasattr(parent1, "altruism") and hasattr(parent2, "altruism"):
                 mean_altruism = (parent1.altruism + parent2.altruism) / 2
@@ -67,41 +68,34 @@ class PrimateAgent:
             else:
                 self.altruism = random.uniform(0.3, 0.7)
 
-        if self.params.get("use_kin_selection"):
-            self.family_id = parent1.family_id if parent1 else random.randint(0, 10)
-
-        if self.params.get("use_reputation"):
-            self.reputation = 0.5
-        if self.params.get("use_memory"):
-            self.memory = {}
-        if self.params.get("use_noise"):
-            self.error_rate = 0.05
+        self.family_id = parent1.family_id if (self.params.get("use_kin_selection") and parent1) else random.randint(0, 10)
+        self.reputation = 0.5 if self.params.get("use_reputation") else 0.0
+        self.memory = {} if self.params.get("use_memory") else None
+        self.error_rate = 0.05 if self.params.get("use_noise") else 0.0
 
     def decide(self, partner):
-        if self.params.get("use_noise") and random.random() < self.error_rate:
+        if random.random() < self.error_rate:
             return random.choice(['cooperate', 'defect'])
 
-        if self.params.get("use_memory") and hasattr(self, 'memory') and partner.id in self.memory:
+        if self.memory is not None and partner.id in self.memory:
             if self.memory[partner.id].count('betray') > 0:
                 return 'defect'
 
-        if self.params.get("use_reputation") and hasattr(partner, 'reputation'):
-            if partner.reputation > 0.6:
-                return 'cooperate'
-            elif partner.reputation < 0.3:
-                return 'defect'
+        if self.params.get("use_reputation") and partner.reputation > 0.6:
+            return 'cooperate'
+        elif self.params.get("use_reputation") and partner.reputation < 0.3:
+            return 'defect'
 
-        if self.params.get("use_kin_selection") and hasattr(self, 'family_id') and hasattr(partner, 'family_id'):
-            if self.family_id == partner.family_id:
-                return 'cooperate'
+        if self.params.get("use_kin_selection") and self.family_id == partner.family_id:
+            return 'cooperate'
 
-        if self.params.get("use_variable_altruism") and hasattr(self, 'altruism'):
-            return 'cooperate' if random.random() < self.altruism else 'defect'
+        if self.params.get("use_variable_altruism") and random.random() < self.altruism:
+            return 'cooperate'
 
         return self.behavior_strategy
 
     def update_memory(self, partner_id, action):
-        if self.params.get("use_memory"):
+        if self.memory is not None:
             if partner_id not in self.memory:
                 self.memory[partner_id] = []
             self.memory[partner_id].append(action)
