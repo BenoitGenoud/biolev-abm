@@ -24,7 +24,7 @@ def full_param_dict(**kwargs):
     return {k: kwargs.get(k, False) for k in keys}
 
 conditions = {
-    "Contrôle (aucun mécanisme)": full_param_dict(),
+    "Contrôle": full_param_dict(),
     "Mémoire sociale": full_param_dict(use_memory=True),
     "Punition": full_param_dict(use_punishment=True),
     "Réputation": full_param_dict(use_reputation=True),
@@ -40,7 +40,7 @@ conditions = {
 selected_conditions = st.multiselect(
     "Choisissez les conditions à comparer :",
     list(conditions.keys()),
-    default=["Contrôle (aucun mécanisme)", "Tous activés"]
+    default=["Contrôle", "Tous activés"]
 )
 
 # === CLASSE AGENT === #
