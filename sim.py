@@ -24,20 +24,20 @@ def full_param_dict(**kwargs):
     return {k: kwargs.get(k, False) for k in keys}
 
 conditions = {
-    "Contrôle (aucun mécanisme)": full_param_dict(),
+    "Aucun mécanisme": full_param_dict(),
     "Mémoire sociale": full_param_dict(use_memory=True),
     "Punition": full_param_dict(use_punishment=True),
     "Réputation": full_param_dict(use_reputation=True),
     "Parenté": full_param_dict(use_kin_selection=True),
     "Erreur de stratégie": full_param_dict(use_noise=True),
     "Altruisme variable": full_param_dict(use_variable_altruism=True),
-    "Tous activés": full_param_dict(
+    "Tous les mécanismes": full_param_dict(
         use_memory=True, use_punishment=True, use_reputation=True,
         use_kin_selection=True, use_noise=True, use_variable_altruism=True
     )
 }
 
-selected_conditions = st.multiselect("Choisissez les conditions à comparer :", list(conditions.keys()), default=["Contrôle (aucun mécanisme)", "Tous activés"])
+selected_conditions = st.multiselect("Choisissez les conditions à comparer :", list(conditions.keys()), default=["Aucun mécanisme", "Tous les mécanismes"])
 
 # === CLASSE AGENT === #
 class PrimateAgent:
