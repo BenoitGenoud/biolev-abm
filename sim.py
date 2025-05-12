@@ -116,6 +116,18 @@ class PrimateAgent:
                 score += 1
             if self.params.get("use_variable_altruism"):
                 score += (self.altruism - 0.5) * 2
+            # Liste des mécanismes activés
+            active_mechanisms = any([
+                self.params.get("use_memory"),
+                self.params.get("use_reputation"),
+                self.params.get("use_kin_selection"),
+                self.params.get("use_variable_altruism")
+            ])
+
+            # Si aucun mécanisme actif => comportement strict selon génotype
+            if not active_mechanisms:
+                return self.behavior_strategy
+            
             score += 0.5 if self.behavior_strategy == 'cooperate' else -0.5
             prob = 1 / (1 + np.exp(-score))
             return 'cooperate' if random.random() < prob else 'defect'
