@@ -37,7 +37,11 @@ conditions = {
     )
 }
 
-selected_conditions = st.multiselect("Choisissez les conditions à comparer :", list(conditions.keys()), default=list(conditions.keys())[:2])
+selected_conditions = st.multiselect(
+    "Choisissez les conditions à comparer :",
+    list(conditions.keys()),
+    default=["Contrôle (aucun mécanisme)", "Tous activés"]
+)
 
 # === CLASSE AGENT === #
 class PrimateAgent:
@@ -174,7 +178,7 @@ def run_comparisons():
         for r in range(N_RUNS):
             run = run_simulation(params)
             runs.append(run)
-            full_log += f"Condition {label}, run {r+1}/{N_RUNS} terminé"
+            full_log += f"Condition {label}, run {r+1}/{N_RUNS} terminé\n"
             progress_bar.progress((i + r / N_RUNS) / len(selected_conditions))
         results[label] = np.array(runs)
 
