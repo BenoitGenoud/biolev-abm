@@ -37,7 +37,7 @@ class PrimateAgent:
                 base_strategy = 'cooperate' if base_strategy == 'defect' else 'defect'
             self.genetic_strategy = base_strategy
         else:
-            self.genetic_strategy = None  # sera défini manuellement dans la première génération
+            self.genetic_strategy = None  # sera défini manuellement ensuite
 
         self.behavior_strategy = self.genetic_strategy
 
@@ -99,9 +99,10 @@ def run_simulation():
     agents = [PrimateAgent(i) for i in range(N_AGENTS)]
     for agent, strategy in zip(agents, strategies):
         agent.genetic_strategy = strategy
-        agent.behavior_strategy = strategy  # phénotype aligné initialement
+        agent.behavior_strategy = strategy
 
     cooperation_history = []
+    proportion_cooperators = []
 
     for generation in range(N_GENERATIONS):
         n_coop = 0
@@ -152,6 +153,14 @@ def run_simulation():
                     a.update_memory(b.id, 'betray')
                     b.update_memory(a.id, 'betray')
 
+        # Calcul des mesures
+        cooperation_rate = n_coop / (N_INTERACTIONS * 2)
+        cooperation_history.append(cooperation_rate)
+
+        prop_coop = sum(1 for a in agents if a.behavior_strategy == 'cooperate') / N_AGENTS
+        proportion_cooperators.append(prop_coop)
+
+        # Reproduction
         agents.sort(key=lambda x: x.energy, reverse=True)
         top_half = agents[:N_AGENTS // 2]
         new_agents = []
@@ -161,18 +170,17 @@ def run_simulation():
             new_agents.extend([parent1, child])
         agents = new_agents
 
-        cooperation_rate = n_coop / (N_INTERACTIONS * 2)
-        cooperation_history.append(cooperation_rate)
-
-    return cooperation_history
+    return cooperation_history, proportion_cooperators
 
 # === LANCEMENT DE LA SIMULATION === #
 if st.button("Lancer la simulation"):
-    history = run_simulation()
+    cooperation_history, proportion_cooperators = run_simulation()
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(history)
+    ax.plot(cooperation_history, label="Taux de coopération observé (interactions)")
+    ax.plot(proportion_cooperators, label="Proportion de coopérateurs (population)")
     ax.set_title("Évolution de la coopération")
     ax.set_xlabel("Générations")
-    ax.set_ylabel("Taux de coopérateurs")
+    ax.set_ylabel("Taux")
+    ax.legend()
     ax.grid(True)
     st.pyplot(fig)
