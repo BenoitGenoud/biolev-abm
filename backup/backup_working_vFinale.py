@@ -17,11 +17,8 @@ PUNISHMENT_COST = 2                 # Le coût en énergie pour punir un agent
 PUNISHMENT_EFFECT = -5              # Le pénalité en énergie subie par un agent qui se fait punir
 MEMORY_LIMIT = 5                    # La limite de mémoire, donc le nombre de souvenirs d'interactions
 
-# Interface Streamlit
+# Interface streamlit
 st.title("Simulation de coopération chez des agents primates")
-
-# Nouveau : choix du mode décisionnel
-mode_decision = st.selectbox("Mode décisionnel", ["Hiérarchique", "Cumulatif"])
 
 # On définit le dictionnaire de paramètres de base (tout "false")
 def full_param_dict(**kwargs):
@@ -43,17 +40,18 @@ conditions = {
     )
 }
 
-# Choix des conditions par l'utilisateur
-selected_conditions = st.multiselect("Conditions à comparer", list(conditions.keys()), default=["Aucun mécanisme", "Tous les mécanismes"])
+# Permet à l'utilisateur de choisir les conditions à comparer
+selected_conditions = st.multiselect("Choisissez les conditions à comparer :", list(conditions.keys()), default=["Aucun mécanisme", "Tous les mécanismes"])
 
 # Définition d'un objet "agent primate"
 class PrimateAgent:
     def __init__(self, id, parent1=None, parent2=None, params=None):
         self.id = id
         self.energy = ENERGY_START      # énergie initiale
-        self.params = params or {}
+        self.params = params or {}      # liste des paramètres
 
-        # Héritage de la stratégie génétique
+        # Si l'agent a des parents (et donc qu'il ne s'agit pas de la première génération), l'agent hérite d'une stratégie
+        # Sinon, il n'a pas encore de stratégie (sera ajoutée au moment de la simulation)
         if parent1 and parent2:
             base_strategy = random.choice([parent1.genetic_strategy, parent2.genetic_strategy])
             if random.random() < 0.1:
@@ -62,64 +60,67 @@ class PrimateAgent:
         else:
             self.genetic_strategy = None
 
-        self.behavior_strategy = self.genetic_strategy
+        self.behavior_strategy = self.genetic_strategy # Pour l'instant, la stratégie exprimée correspond à la stratégie génotypique
 
-        # Niveau d'altruisme initial
+        # Si on utilise l'altruisme, on calcule un niveau d'altruisme
         if self.params.get("use_variable_altruism"):
-            self.altruism = random.uniform(0.3, 0.7)
+            if parent1 and parent2 and hasattr(parent1, "altruism") and hasattr(parent2, "altruism"):
+                mean_altruism = (parent1.altruism + parent2.altruism) / 2
+                self.altruism = min(1.0, max(0.0, mean_altruism + random.uniform(-0.05, 0.05)))
+            else:
+                self.altruism = random.uniform(0.3, 0.7)    # Au départ, le niveau d'altruisme est aléatoirement défini (entre 0.3 et 0.7)
 
-        # Famille pour la sélection par parenté
+        # Si on utilise la sélection par parenté (kin selection), alors chaque famille a un identifiant
         if self.params.get("use_kin_selection"):
             self.family_id = parent1.family_id if parent1 else random.randint(0, 10)
 
-        # Réputation initiale
+        # Si on utilise la réputation, on l'initialise à 0.5
         if self.params.get("use_reputation"):
             self.reputation = 0.5
-
-        # Mémoire initiale des interactions
+        
+        # Initialisation de la mémoire sous forme de dictionnaire : {id partenaire : liste d’actions}
         if self.params.get("use_memory"):
             self.memory = {}
-
-        # Taux d'erreur stratégique
+        
+        # Si on utilise les erreurs de stratégie (noise), donc le fait de se tromper d'action (génotype =/= phénotype)
+        # on l'initialise. Par défaut, ce taux est de 0.05 soit 5%.
         if self.params.get("use_noise"):
             self.error_rate = 0.05
 
-    # Fonction décisionnelle (avec choix hiérarchique ou cumulatif)
+    # Fonction qui permet à l'agent de prendre une décision (coopérer ou trahir)
     def decide(self, partner):
-        # Mode hiérarchique : évaluation séquentielle prioritaire
-        if mode_decision == "Hiérarchique":
-            if self.params.get("use_noise") and random.random() < self.error_rate:
-                return random.choice(['cooperate', 'defect'])
-            if self.params.get("use_memory") and partner.id in self.memory and 'betray' in self.memory[partner.id]:
-                return 'defect'
-            if self.params.get("use_reputation") and hasattr(partner, 'reputation'):
-                if partner.reputation > 0.6:
-                    return 'cooperate'
-                elif partner.reputation < 0.3:
-                    return 'defect'
-            if self.params.get("use_kin_selection") and hasattr(self, 'family_id') and hasattr(partner, 'family_id') and self.family_id == partner.family_id:
-                return 'cooperate'
-            if self.params.get("use_variable_altruism"):
-                return 'cooperate' if random.random() < self.altruism else 'defect'
-            return self.behavior_strategy
+        # Si on utilise les erreurs de stratégie, on regarde si l'agent se trompe
+        if self.params.get("use_noise") and random.random() < self.error_rate:
+            return random.choice(['cooperate', 'defect'])
 
-        # Mode cumulatif : décision probabiliste cumulée
-        elif mode_decision == "Cumulatif":
-            if self.params.get("use_noise") and random.random() < self.error_rate:
-                return random.choice(['cooperate', 'defect'])
-            score = 0
-            if self.params.get("use_memory") and partner.id in self.memory and 'betray' in self.memory[partner.id]:
-                score -= 1
-            if self.params.get("use_reputation"):
-                score += 1 if partner.reputation > 0.6 else -1 if partner.reputation < 0.3 else 0
-            if self.params.get("use_kin_selection") and self.family_id == partner.family_id:
-                score += 1
-            if self.params.get("use_variable_altruism"):
-                score += (self.altruism - 0.5) * 2
-            score += 0.5 if self.behavior_strategy == 'cooperate' else -0.5
-            prob = 1 / (1 + np.exp(-score))
-            return 'cooperate' if random.random() < prob else 'defect'
-    
+        # Si on utilise la mémoire des interactions, l'agent décide de se venger s'il se souvient que le partenaire est un tricheur
+        if self.params.get("use_memory") and hasattr(self, 'memory') and partner.id in self.memory:
+            if self.memory[partner.id].count('betray') > 0:
+                return 'defect'
+
+        # Si on utilise la réputation, l'agent coopère si le partenaire a une réputation plus haute que 0.6,
+        # mais il trahit si le partenaire a une réputation de moins de 0.3
+        # Si entre les 2, alors aucune décision n'est prise pour l'instant
+        if self.params.get("use_reputation") and hasattr(partner, 'reputation'):
+            if partner.reputation > 0.6:
+                return 'cooperate'
+            elif partner.reputation < 0.3:
+                return 'defect'
+
+        # Si la sélection par parenté est activée, les agents d'une même famille coopèrent systématiquement
+        if self.params.get("use_kin_selection") and hasattr(self, 'family_id') and hasattr(partner, 'family_id'):
+            if self.family_id == partner.family_id:
+                return 'cooperate'
+            
+        # Si on utilise l'altruisme, on fait un jet de dès pour savoir si l'agent coopère. On génère un pseudo-aléatoire
+        # situé entre 0 et 1, et si ce nombre est inférieur au niveau d'altruisme, alors l'agent coopère. Ainsi, plus son altruisme est haut
+        # plus la coopération sera systématique.
+        if self.params.get("use_variable_altruism") and hasattr(self, 'altruism'):
+            return 'cooperate' if random.random() < self.altruism else 'defect'
+
+        # Si aucune décision n'a été prise, alors on utilise la stratégie génotypique
+        return self.behavior_strategy
+
     # Fonction permettant de mettre à jour la mémoire d'un agent après une interaction
     def update_memory(self, partner_id, action):
         if self.params.get("use_memory"):
