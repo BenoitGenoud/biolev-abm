@@ -114,8 +114,6 @@ def run_simulation(params):
         agent.behavior_strategy = strategy
 
     history = []
-    genetic_history = []
-
     for _ in range(N_GENERATIONS):
         n_coop = 0
         for _ in range(N_INTERACTIONS):
@@ -162,8 +160,6 @@ def run_simulation(params):
                 b.update_memory(a.id, 'coop')
 
         history.append(n_coop / (N_INTERACTIONS * 2))
-        coop_count = sum(1 for agent in agents if agent.genetic_strategy == 'cooperate')
-        genetic_history.append(coop_count / N_AGENTS)
 
         agents.sort(key=lambda x: x.energy, reverse=True)
         top_half = agents[:N_AGENTS // 2]
@@ -174,7 +170,7 @@ def run_simulation(params):
             new_agents.extend([p1, child])
         agents = new_agents
 
-    return history, genetic_history
+    return history
 
 # === COMPARAISON MULTIPLE ===
 def run_comparisons():
@@ -188,28 +184,24 @@ def run_comparisons():
         params = conditions[label]
         log_status.text(f"Simulation en cours : {label}")
         runs = []
-        genetic_runs = []
         for r in range(N_RUNS):
-            run, genetic = run_simulation(params)
+            run = run_simulation(params)
             runs.append(run)
-            genetic_runs.append(genetic)
             total_iterations += 1
             full_log += f"Condition {label}, run {r+1}/{N_RUNS} terminé\n"
             log_status.text(full_log)
             progress_bar.progress((i + r / N_RUNS) / len(selected_conditions))
         results[label] = np.array(runs)
-        results[label + "_genetic"] = np.array(genetic_runs)
 
     progress_bar.empty()
     log_status.success(f"Simulation terminée. Nombre total d'itérations : {total_iterations}")
 
-    # === Affichage graphique coopération ===
-    st.subheader("Graphique - Taux de coopération comportementale")
+    # === Affichage graphique ===
+    st.subheader("Graphique")
     fig, ax = plt.subplots(figsize=(10, 6))
     x = np.arange(N_GENERATIONS)
 
-    for label in selected_conditions:
-        data = results[label]
+    for label, data in results.items():
         mean = np.mean(data, axis=0)
         std = np.std(data, axis=0)
         ax.plot(x, mean, label=label)
@@ -222,30 +214,12 @@ def run_comparisons():
     ax.grid(True)
     st.pyplot(fig)
 
-    # === Affichage graphique stratégie génétique ===
-    st.subheader("Évolution de la proportion de stratégies coopératives")
-    fig2, ax2 = plt.subplots(figsize=(10, 6))
-
-    for label in selected_conditions:
-        data = results[label + "_genetic"]
-        mean = np.mean(data, axis=0)
-        std = np.std(data, axis=0)
-        ax2.plot(x, mean, label=label)
-        ax2.fill_between(x, mean - std, mean + std, alpha=0.2)
-
-    ax2.set_title("Comparaison des conditions - Stratégie génétique 'cooperate'")
-    ax2.set_xlabel("Générations")
-    ax2.set_ylabel("Proportion de 'cooperate'")
-    ax2.legend()
-    ax2.grid(True)
-    st.pyplot(fig2)
-
     # === Résultats statistiques ===
     st.subheader("Rapport statistique")
-    base_label = list(results.keys())[0].replace("_genetic", "")
+    base_label = list(results.keys())[0]
     base = results[base_label][:, -1]
-    for label in selected_conditions[1:]:
-        other = results[label][:, -1]
+    for label, data in list(results.items())[1:]:
+        other = data[:, -1]
         t_stat, p_val = stats.ttest_ind(base, other)
         u_stat, u_p_val = stats.mannwhitneyu(base, other)
 
@@ -253,6 +227,7 @@ def run_comparisons():
         st.markdown(f"- t-test : p = {p_val:.4f}")
         st.markdown(f"- Mann-Whitney U-test : p = {u_p_val:.4f}")
 
+        # --- AJOUT : Affichage des écarts-types et IC ---
         mean_other = np.mean(other)
         std_other = np.std(other)
         ci_low = mean_other - 1.96 * std_other / np.sqrt(N_RUNS)
