@@ -140,6 +140,17 @@ def run_simulation(params):
                     a.energy += PUNISHMENT_EFFECT
                     b.energy -= PUNISHMENT_COST
 
+            if params.get("use_reputation"):
+                if a_action == 'cooperate':
+                    a.reputation = min(1.0, a.reputation + 0.05)
+                else:
+                    a.reputation = max(0.0, a.reputation - 0.05)
+
+                if b_action == 'cooperate':
+                    b.reputation = min(1.0, b.reputation + 0.05)
+                else:
+                    b.reputation = max(0.0, b.reputation - 0.05)
+
             if a_action == 'cooperate' and b_action == 'defect' and hasattr(a, "memory"):
                 a.update_memory(b.id, 'betray')
             if b_action == 'cooperate' and a_action == 'defect' and hasattr(b, "memory"):
@@ -208,8 +219,20 @@ def run_comparisons():
     base_label = list(results.keys())[0]
     base = results[base_label][:, -1]
     for label, data in list(results.items())[1:]:
-        t_stat, p_val = stats.ttest_ind(base, data[:, -1])
-        st.markdown(f"**{label} vs {base_label}** : p = {p_val:.4f}")
+        other = data[:, -1]
+        t_stat, p_val = stats.ttest_ind(base, other)
+        u_stat, u_p_val = stats.mannwhitneyu(base, other)
+
+        st.markdown(f"**{label} vs {base_label}** :")
+        st.markdown(f"- t-test : p = {p_val:.4f}")
+        st.markdown(f"- Mann-Whitney U-test : p = {u_p_val:.4f}")
+
+        # --- AJOUT : Affichage des écarts-types et IC ---
+        mean_other = np.mean(other)
+        std_other = np.std(other)
+        ci_low = mean_other - 1.96 * std_other / np.sqrt(N_RUNS)
+        ci_high = mean_other + 1.96 * std_other / np.sqrt(N_RUNS)
+        st.markdown(f"- Moyenne : {mean_other:.3f}, Écart-type : {std_other:.3f}, IC95%: [{ci_low:.3f}, {ci_high:.3f}]")
 
     # === Logs ===
     st.subheader("Logs")
