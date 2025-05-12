@@ -17,7 +17,7 @@ PUNISHMENT_EFFECT = -5
 MEMORY_LIMIT = 5
 
 # === CONFIGURATION PAR INTERFACE === #
-st.title("Simulation de coopération chez des agents primates")
+st.title("Simulation de coopération chez des agents test")
 
 def full_param_dict(**kwargs):
     keys = ["use_memory", "use_punishment", "use_reputation", "use_kin_selection", "use_noise", "use_variable_altruism"]
