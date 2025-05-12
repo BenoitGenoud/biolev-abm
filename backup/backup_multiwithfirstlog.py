@@ -24,7 +24,7 @@ def full_param_dict(**kwargs):
     return {k: kwargs.get(k, False) for k in keys}
 
 conditions = {
-    "Contrôle (aucun mécanisme)": full_param_dict(),
+    "Contrôle": full_param_dict(),
     "Mémoire sociale": full_param_dict(use_memory=True),
     "Punition": full_param_dict(use_punishment=True),
     "Réputation": full_param_dict(use_reputation=True),
@@ -37,7 +37,11 @@ conditions = {
     )
 }
 
-selected_conditions = st.multiselect("Choisissez les conditions à comparer :", list(conditions.keys()), default=["Contrôle (aucun mécanisme)", "Tous activés"])
+selected_conditions = st.multiselect(
+    "Choisissez les conditions à comparer :",
+    list(conditions.keys()),
+    default=["Contrôle", "Tous activés"]
+)
 
 # === CLASSE AGENT === #
 class PrimateAgent:
@@ -164,26 +168,20 @@ def run_simulation(params):
 # === COMPARAISON MULTIPLE ===
 def run_comparisons():
     progress_bar = st.progress(0)
-    log_status = st.empty()
+    log_output = st.empty()
     full_log = ""
     results = {}
-
     for i, label in enumerate(selected_conditions):
         params = conditions[label]
-        log_status.text(f"Simulation en cours : {label}")
+        log_output.text(f"Simulation en cours : {label}")
         runs = []
         for r in range(N_RUNS):
             run = run_simulation(params)
             runs.append(run)
             full_log += f"Condition {label}, run {r+1}/{N_RUNS} terminé\n"
-            log_status.text(full_log)
             progress_bar.progress((i + r / N_RUNS) / len(selected_conditions))
         results[label] = np.array(runs)
-        progress_bar.empty()
-        log_status.success(f"Simulation faite pour {label} ! {N_RUNS} itérations.")
 
-    # === Affichage graphique ===
-    st.subheader("Graphique")
     fig, ax = plt.subplots(figsize=(10, 6))
     x = np.arange(N_GENERATIONS)
 
@@ -199,18 +197,13 @@ def run_comparisons():
     ax.legend()
     ax.grid(True)
     st.pyplot(fig)
+    st.text_area("Journal complet des exécutions", full_log, height=300)
 
-    # === Résultats statistiques ===
-    st.subheader("Rapport statistique")
     base_label = list(results.keys())[0]
     base = results[base_label][:, -1]
     for label, data in list(results.items())[1:]:
         t_stat, p_val = stats.ttest_ind(base, data[:, -1])
         st.markdown(f"**{label} vs {base_label}** : p = {p_val:.4f}")
-
-    # === Journal détaillé ===
-    with st.expander("Afficher les logs détaillés"):
-        st.text_area("Journal complet des exécutions", full_log, height=300)
 
 # === LANCEMENT ===
 if st.button("Lancer les simulations comparatives"):
