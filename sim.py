@@ -167,6 +167,7 @@ def run_comparisons():
     log_status = st.empty()
     full_log = ""
     results = {}
+    total_iterations = 0
 
     for i, label in enumerate(selected_conditions):
         params = conditions[label]
@@ -175,12 +176,14 @@ def run_comparisons():
         for r in range(N_RUNS):
             run = run_simulation(params)
             runs.append(run)
+            total_iterations += 1
             full_log += f"Condition {label}, run {r+1}/{N_RUNS} terminé\n"
             log_status.text(full_log)
             progress_bar.progress((i + r / N_RUNS) / len(selected_conditions))
         results[label] = np.array(runs)
-        progress_bar.empty()
-        log_status.success(f"Simulation faite pour {label} ! {N_RUNS} itérations.")
+
+    progress_bar.empty()
+    log_status.success(f"Simulation terminée. Nombre total d'itérations : {total_iterations}")
 
     # === Affichage graphique ===
     st.subheader("Graphique")
@@ -208,8 +211,9 @@ def run_comparisons():
         t_stat, p_val = stats.ttest_ind(base, data[:, -1])
         st.markdown(f"**{label} vs {base_label}** : p = {p_val:.4f}")
 
-    # === Journal détaillé ===
-    with st.expander("Afficher les logs détaillés"):
+    # === Logs ===
+    st.subheader("Logs")
+    with st.expander("Logs"):
         st.text_area("Journal complet des exécutions", full_log, height=300)
 
 # === LANCEMENT ===
