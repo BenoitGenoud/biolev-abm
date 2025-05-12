@@ -163,19 +163,10 @@ def run_simulation(params):
 
 # === COMPARAISON MULTIPLE ===
 def run_comparisons():
-    progress_bar = st.progress(0)
-    log_output = st.empty()
-    full_log = ""
     results = {}
-    for i, label in enumerate(selected_conditions):
+    for label in selected_conditions:
         params = conditions[label]
-        log_output.text(f"Simulation en cours : {label}")
-        runs = []
-        for r in range(N_RUNS):
-            run = run_simulation(params)
-            runs.append(run)
-            full_log += f"Condition {label}, run {r+1}/{N_RUNS} terminé"
-            progress_bar.progress((i + r / N_RUNS) / len(selected_conditions))
+        runs = [run_simulation(params) for _ in range(N_RUNS)]
         results[label] = np.array(runs)
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -193,7 +184,6 @@ def run_comparisons():
     ax.legend()
     ax.grid(True)
     st.pyplot(fig)
-    st.text_area("Journal complet des exécutions", full_log, height=300)
 
     base_label = list(results.keys())[0]
     base = results[base_label][:, -1]
