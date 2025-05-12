@@ -1,5 +1,3 @@
-# Version avancée avec comparaison statistique intégrée à la simulation complète
-
 import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,20 +21,24 @@ st.title("Simulation de coopération - Comparaison statistique")
 
 st.sidebar.header("Configurer les conditions de test")
 
+def full_param_dict(**kwargs):
+    keys = ["use_memory", "use_punishment", "use_reputation", "use_kin_selection", "use_noise", "use_variable_altruism"]
+    return {k: kwargs.get(k, False) for k in keys}
+
 conditions = {
-    "Contrôle (aucun mécanisme)": {},
-    "Mémoire sociale": {"use_memory": True},
-    "Punition": {"use_punishment": True},
-    "Réputation": {"use_reputation": True},
-    "Parenté": {"use_kin_selection": True},
-    "Erreur de stratégie": {"use_noise": True},
-    "Altruisme variable": {"use_variable_altruism": True},
-    "Mémoire + Punition": {"use_memory": True, "use_punishment": True},
-    "Mémoire + Réputation": {"use_memory": True, "use_reputation": True},
-    "Tous activés": {
-        "use_memory": True, "use_punishment": True, "use_reputation": True,
-        "use_kin_selection": True, "use_noise": True, "use_variable_altruism": True
-    }
+    "Contrôle (aucun mécanisme)": full_param_dict(),
+    "Mémoire sociale": full_param_dict(use_memory=True),
+    "Punition": full_param_dict(use_punishment=True),
+    "Réputation": full_param_dict(use_reputation=True),
+    "Parenté": full_param_dict(use_kin_selection=True),
+    "Erreur de stratégie": full_param_dict(use_noise=True),
+    "Altruisme variable": full_param_dict(use_variable_altruism=True),
+    "Mémoire + Punition": full_param_dict(use_memory=True, use_punishment=True),
+    "Mémoire + Réputation": full_param_dict(use_memory=True, use_reputation=True),
+    "Tous activés": full_param_dict(
+        use_memory=True, use_punishment=True, use_reputation=True,
+        use_kin_selection=True, use_noise=True, use_variable_altruism=True
+    )
 }
 
 selected_conditions = st.multiselect("Choisissez les conditions à comparer :", list(conditions.keys()), default=list(conditions.keys())[:2])
