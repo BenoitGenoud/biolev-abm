@@ -20,6 +20,19 @@ MEMORY_LIMIT = 5                    # La limite de mémoire, donc le nombre de s
 # Interface streamlit
 st.title("Simulation de coopération chez des agents primates")
 
+# Changement de la couleur de fond
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #0d0f12;
+        color: white;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # On définit le dictionnaire de paramètres de base (tout "false")
 def full_param_dict(**kwargs):
     keys = ["use_memory", "use_punishment", "use_reputation", "use_kin_selection", "use_noise", "use_variable_altruism"]
